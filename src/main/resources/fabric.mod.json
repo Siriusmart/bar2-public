@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "bar2",
+  "version": "${version}",
+  "name": "Bar2Dee2",
+  "description": "Movement automation utility.",
+  "authors": [
+    "Siriusmart"
+  ],
+  "contact": {
+    "repo": "https://github.com/siriusmart/bar2dee2"
+  },
+  "icon": "assets/template/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "meteor": [
+      "addon.Bar2Dee2"
+    ]
+  },
+  "mixins": [
+    "bar2.mixins.json"
+  ],
+  "custom": {},
+  "depends": {
+    "java": ">=21",
+    "minecraft": ["${mc_version}"],
+    "meteor-client": "*"
+  }
+}
