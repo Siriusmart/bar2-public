@@ -4,6 +4,7 @@ import java.util.List;
 
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.BoolSetting;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
@@ -23,6 +24,25 @@ public class LevelFly extends Module {
             .defaultValue(121)
             .sliderMin(-64)
             .sliderMax(384)
+            .build());
+
+    public final Setting<Double> pitchUpAngle = sgGeneral.add(new DoubleSetting.Builder()
+            .name("Pitch up angle")
+            .description("Angle to use when pitching up")
+            .defaultValue(-10)
+            .sliderMin(-90).sliderMax(90)
+            .build());
+    public final Setting<Double> pitchDownAngle = sgGeneral.add(new DoubleSetting.Builder()
+            .name("Pitch down angle")
+            .description("Angle to use when pitching down")
+            .defaultValue(-3)
+            .sliderMin(-90).sliderMax(90)
+            .build());
+    public final Setting<Double> rotationSpeed = sgGeneral.add(new DoubleSetting.Builder()
+            .name("Rotation speed")
+            .description("Rotation speed when switching pitches")
+            .defaultValue(50)
+            .sliderMin(0).sliderMax(100)
             .build());
 
     public final Setting<Boolean> takeOff = sgGeneral.add(new BoolSetting.Builder()
@@ -117,7 +137,7 @@ public class LevelFly extends Module {
             return;
         }
 
-        mc.player.setPitch(pitchingDown ? -3 : -10);
+        mc.player.setPitch((pitchingDown ? pitchUpAngle.get() : pitchDownAngle.get()).floatValue());
         cameraPitch = MathHelper.clamp(cameraPitch, -90, 90);
     }
 }
