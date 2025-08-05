@@ -29,13 +29,13 @@ public class LevelFly extends Module {
     public final Setting<Double> pitchUpAngle = sgGeneral.add(new DoubleSetting.Builder()
             .name("Pitch up angle")
             .description("Angle to use when pitching up")
-            .defaultValue(-10)
+            .defaultValue(-3)
             .sliderMin(-90).sliderMax(90)
             .build());
     public final Setting<Double> pitchDownAngle = sgGeneral.add(new DoubleSetting.Builder()
             .name("Pitch down angle")
             .description("Angle to use when pitching down")
-            .defaultValue(-3)
+            .defaultValue(-10)
             .sliderMin(-90).sliderMax(90)
             .build());
     public final Setting<Double> rotationSpeed = sgGeneral.add(new DoubleSetting.Builder()
