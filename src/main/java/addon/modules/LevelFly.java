@@ -143,7 +143,7 @@ public class LevelFly extends Module {
             return;
         }
 
-        mc.player.setPitch((pitchingDown ? mc.player.getY() >= lowerBound ? pressDownAngle.get() : pitchDownAngle.get() : pitchUpAngle.get()).floatValue());
+        mc.player.setPitch((pitchingDown ? mc.player.getY() >= lowerBound + 0.1 ? pressDownAngle.get() : pitchDownAngle.get() : pitchUpAngle.get()).floatValue());
         cameraPitch = MathHelper.clamp(cameraPitch, -90, 90);
     }
 }

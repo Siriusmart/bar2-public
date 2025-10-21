@@ -39,7 +39,7 @@ public class FloppyFly extends Module {
     public final Setting<Integer> maximumSpeed = this.sgGeneral.add(new IntSetting.Builder()
             .name("max-speed")
             .description("Max speed.")
-            .defaultValue(Integer.valueOf(37))
+            .defaultValue(Integer.valueOf(50))
             .sliderMin(0).sliderMax(100)
             .build());
 
