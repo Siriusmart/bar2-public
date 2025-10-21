@@ -26,15 +26,21 @@ public class LevelFly extends Module {
             .sliderMax(384)
             .build());
 
-    public final Setting<Double> pitchUpAngle = sgGeneral.add(new DoubleSetting.Builder()
-            .name("Pitch up angle")
-            .description("Angle to use when pitching up")
-            .defaultValue(-3)
-            .sliderMin(-90).sliderMax(90)
-            .build());
     public final Setting<Double> pitchDownAngle = sgGeneral.add(new DoubleSetting.Builder()
             .name("Pitch down angle")
             .description("Angle to use when pitching down")
+            .defaultValue(-3)
+            .sliderMin(-90).sliderMax(90)
+            .build());
+    public final Setting<Double> pressDownAngle = sgGeneral.add(new DoubleSetting.Builder()
+            .name("Press down angle")
+            .description("Angle to use when pressing down")
+            .defaultValue(0)
+            .sliderMin(-90).sliderMax(90)
+            .build());
+    public final Setting<Double> pitchUpAngle = sgGeneral.add(new DoubleSetting.Builder()
+            .name("Pitch up angle")
+            .description("Angle to use when pitching up")
             .defaultValue(-10)
             .sliderMin(-90).sliderMax(90)
             .build());
@@ -137,7 +143,7 @@ public class LevelFly extends Module {
             return;
         }
 
-        mc.player.setPitch((pitchingDown ? pitchUpAngle.get() : pitchDownAngle.get()).floatValue());
+        mc.player.setPitch((pitchingDown ? mc.player.getY() >= lowerBound ? pressDownAngle.get() : pitchDownAngle.get() : pitchUpAngle.get()).floatValue());
         cameraPitch = MathHelper.clamp(cameraPitch, -90, 90);
     }
 }
