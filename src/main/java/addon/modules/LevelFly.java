@@ -84,7 +84,7 @@ public class LevelFly extends Module {
 
     @Override
     public void onActivate() {
-        if (mc.player.getY() < upperBound && !(takeOff.get() || (mc.player.isFallFlying() && recover.get()))) {
+        if (mc.player.getY() < upperBound && !(takeOff.get() || (mc.player.isGliding() && recover.get()))) {
             error("Player must be above upper bounds.");
             toggle();
             return;
@@ -107,7 +107,7 @@ public class LevelFly extends Module {
 
         pitchingDown = true;
 
-        if (takeOff.get() && !mc.player.isFallFlying()) {
+        if (takeOff.get() && !mc.player.isGliding()) {
             ClimbFly climbFly = Modules.get().get(ClimbFly.class);
             climbFly.takeOff.set(true);
             climbFly.targetLevel.set(yLevel.get().doubleValue());

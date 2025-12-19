@@ -91,7 +91,7 @@ public class Lander extends Module {
 
     @Override
     public void onActivate() {
-        if (!mc.player.isFallFlying()) {
+        if (!mc.player.isGliding()) {
             toggle();
             error("Player not in air.");
             return;
@@ -138,7 +138,7 @@ public class Lander extends Module {
         mc.player.setPitch(cameraPitch);
 
         if (mc.player.isOnGround() || (exitOnFluid.get() && mc.player.isInFluid()))
-            mc.player.stopFallFlying();
+            mc.player.stopGliding();
     }
 
     @EventHandler
@@ -186,11 +186,11 @@ public class Lander extends Module {
          * double sin = Math.sin(Math.toRadians(mc.player.getYaw()));
          * double normalised_x = dx * cos + dz * sin;
          * double normalised_z = dz * cos - dx * sin;
-         * 
+         *
          * double angle = Math.atan2(normalised_z, -normalised_x);
          * int octant = (int) Math.round((angle < 0 ? angle + 2 * Math.PI : angle) /
          * (Math.PI / 4));
-         * 
+         *
          * switch (octant % 8) {
          * case 0:
          * mc.options.rightKey.setPressed(true);

@@ -96,7 +96,7 @@ public class ClimbFly extends Module {
 
     @Override
     public void onActivate() {
-        if (!mc.player.isFallFlying()) {
+        if (!mc.player.isGliding()) {
             if (!takeOff.get()) {
                 toggle();
                 error("Player not in air.");
@@ -143,7 +143,7 @@ public class ClimbFly extends Module {
             mc.player.setPitch(pitchUp ? pitchUpAngle.get().floatValue() : pitchDownAngle.get().floatValue());
         }
 
-        if (!mc.player.isFallFlying()) {
+        if (!mc.player.isGliding()) {
             error("Climb failed.");
             toggle();
         } else if (mc.player.getVelocity().length() > pitchDownLimit.get() && mc.player.getY() > targetLevel.get().doubleValue()) {

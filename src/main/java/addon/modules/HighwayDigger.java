@@ -47,7 +47,6 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.PickaxeItem;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -59,6 +58,12 @@ import addon.Bar2Dee2;
 
 @SuppressWarnings("ConstantConditions")
 public class HighwayDigger extends Module {
+    private static boolean isPickaxe(Item item) {
+        return item.equals(Items.WOODEN_PICKAXE) || item.equals(Items.STONE_PICKAXE) || item.equals(Items.IRON_PICKAXE)
+                || item.equals(Items.GOLDEN_PICKAXE) || item.equals(Items.DIAMOND_PICKAXE)
+                || item.equals(Items.NETHERITE_PICKAXE);
+    }
+
     public enum Rotation {
         None(false, false),
         Mine(true, false),
@@ -440,28 +445,28 @@ public class HighwayDigger extends Module {
                     b.mc.player.setYaw(0);
 
                     if (!isZ) {
-                        b.input.pressingForward = z < 0;
-                        b.input.pressingBack = z > 0;
+                        b.input.forward(z < 0);
+                        b.input.backward(z > 0);
 
                         if (b.mc.player.getZ() < 0) {
-                            boolean forward = b.input.pressingForward;
-                            b.input.pressingForward = b.input.pressingBack;
-                            b.input.pressingBack = forward;
+                            boolean forward = b.input.playerInput.forward();
+                            b.input.forward(b.input.playerInput.backward());
+                            b.input.backward(forward);;
                         }
                     }
 
                     if (!isX) {
-                        b.input.pressingRight = x > 0;
-                        b.input.pressingLeft = x < 0;
+                        b.input.right(x > 0);
+                        b.input.left(x < 0);
 
                         if (b.mc.player.getX() < 0) {
-                            boolean right = b.input.pressingRight;
-                            b.input.pressingRight = b.input.pressingLeft;
-                            b.input.pressingLeft = right;
+                            boolean right = b.input.playerInput.right();
+                            b.input.right(b.input.playerInput.left());
+                            b.input.left(right);
                         }
                     }
 
-                    b.input.sneaking = true;
+                    b.input.sneak(true);
                 }
             }
         },
@@ -479,7 +484,7 @@ public class HighwayDigger extends Module {
                 checkTasks(b);
 
                 if (b.state == Forward)
-                    b.input.pressingForward = true; // Move
+                    b.input.forward(true); // Move
             }
 
             private void checkTasks(HighwayDigger b) {
@@ -538,7 +543,7 @@ public class HighwayDigger extends Module {
             protected void start(HighwayDigger b) {
                 int biggestCount = 0;
 
-                for (int i = 0; i < b.mc.player.getInventory().main.size(); i++) {
+                for (int i = 0; i < b.mc.player.getInventory().getMainStacks().size(); i++) {
                     ItemStack itemStack = b.mc.player.getInventory().getStack(i);
 
                     if (itemStack.getItem() instanceof BlockItem && b.trashItems.get().contains(itemStack.getItem())
@@ -581,7 +586,7 @@ public class HighwayDigger extends Module {
                     return;
                 }
 
-                for (int i = 0; i < b.mc.player.getInventory().main.size(); i++) {
+                for (int i = 0; i < b.mc.player.getInventory().getMainStacks().size(); i++) {
                     if (i == skipSlot)
                         continue;
 
@@ -688,7 +693,7 @@ public class HighwayDigger extends Module {
         }
 
         private int findSlot(HighwayDigger b, Predicate<ItemStack> predicate, boolean hotbar) {
-            for (int i = hotbar ? 0 : 9; i < (hotbar ? 9 : b.mc.player.getInventory().main.size()); i++) {
+            for (int i = hotbar ? 0 : 9; i < (hotbar ? 9 : b.mc.player.getInventory().getMainStacks().size()); i++) {
                 if (predicate.test(b.mc.player.getInventory().getStack(i)))
                     return i;
             }
@@ -744,7 +749,7 @@ public class HighwayDigger extends Module {
         }
 
         private boolean hasItem(HighwayDigger b, Item item) {
-            for (int i = 0; i < b.mc.player.getInventory().main.size(); i++) {
+            for (int i = 0; i < b.mc.player.getInventory().getMainStacks().size(); i++) {
                 if (b.mc.player.getInventory().getStack(i).getItem() == item)
                     return true;
             }
@@ -754,7 +759,7 @@ public class HighwayDigger extends Module {
 
         protected int countItem(HighwayDigger b, Predicate<ItemStack> predicate) {
             int count = 0;
-            for (int i = 0; i < b.mc.player.getInventory().main.size(); i++) {
+            for (int i = 0; i < b.mc.player.getInventory().getMainStacks().size(); i++) {
                 ItemStack stack = b.mc.player.getInventory().getStack(i);
                 if (predicate.test(stack))
                     count += stack.getCount();
@@ -796,13 +801,13 @@ public class HighwayDigger extends Module {
         protected int findAndMoveBestToolToHotbar(HighwayDigger b, BlockState blockState, boolean noSilkTouch) {
             // Check for creative
             if (b.mc.player.isCreative())
-                return b.mc.player.getInventory().selectedSlot;
+                return b.mc.player.getInventory().getSelectedSlot();
 
             // Find best tool
             double bestScore = -1;
             int bestSlot = -1;
 
-            for (int i = 0; i < b.mc.player.getInventory().main.size(); i++) {
+            for (int i = 0; i < b.mc.player.getInventory().getMainStacks().size(); i++) {
                 double score = AutoTool.getScore(b.mc.player.getInventory().getStack(i), blockState, false, false,
                         AutoTool.EnchantPreference.None, itemStack -> {
                             if (noSilkTouch && Utils.hasEnchantment(itemStack, Enchantments.SILK_TOUCH))
@@ -817,10 +822,10 @@ public class HighwayDigger extends Module {
             }
 
             if (bestSlot == -1)
-                return b.mc.player.getInventory().selectedSlot;
+                return b.mc.player.getInventory().getSelectedSlot();
 
-            if (b.mc.player.getInventory().getStack(bestSlot).getItem() instanceof PickaxeItem) {
-                int count = countItem(b, stack -> stack.getItem() instanceof PickaxeItem);
+            if (isPickaxe(b.mc.player.getInventory().getStack(bestSlot).getItem())) {
+                int count = countItem(b, stack -> isPickaxe(stack.getItem()));
 
                 if (count <= b.savePickaxes.get()) {
                     b.error("Found less than the selected amount of pickaxes required: " + count + "/"

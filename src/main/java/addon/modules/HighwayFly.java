@@ -455,7 +455,7 @@ public class HighwayFly extends Module {
             default:
                 throw new RuntimeException("even octants don't have origin2");
         }
-        
+
         // TODO convert to expression
 
         return new BlockPos(x, y, z);
@@ -633,7 +633,7 @@ public class HighwayFly extends Module {
             Modules.get().get(FloppyFly.class).toggle();
         }
 
-        if (!mc.player.isFallFlying()) {
+        if (!mc.player.isGliding()) {
             mc.player.setPitch(cameraPitch);
             mc.player.setYaw(cameraYaw);
             return;
@@ -890,7 +890,7 @@ public class HighwayFly extends Module {
                     } else
                         return;
 
-                if (!module.mc.player.isFallFlying() && !module.baritone.getCustomGoalProcess().isActive()) {
+                if (!module.mc.player.isGliding() && !module.baritone.getCustomGoalProcess().isActive()) {
                     if (!module.mc.player.getBlockPos().equals(targetPos)) {
                         if (++barAttempt > module.maxRetries.get()) {
                             module.toggle();
@@ -1021,13 +1021,13 @@ public class HighwayFly extends Module {
                 if (grace != 0)
                     --grace;
 
-                if ((grace == 0 && !module.mc.player.isFallFlying()) || module.mc.player.isInFluid()) {
+                if ((grace == 0 && !module.mc.player.isGliding()) || module.mc.player.isInFluid()) {
                     if (module.debugMessages.get())
                         module.info("Started GOTOCLEAR because not flying.");
                     LevelFly levelFly = Modules.get().get(LevelFly.class);
                     if (levelFly.isActive())
                         levelFly.toggle();
-                    module.mc.player.stopFallFlying();
+                    module.mc.player.stopGliding();
                     stopFlying(module);
                     module.state = State.GotoClear;
                     module.state.start(module);
@@ -1037,7 +1037,7 @@ public class HighwayFly extends Module {
                 boolean blockInFront = module.blockInFront(2);
                 boolean yLevel = module.mc.player.getBlockPos().getY() <= module.level;
                 boolean lowVelo = grace == 0 && module.mc.player.getVelocity().horizontalLength() <= 0.5;
-                boolean badDir = module.mc.player.isFallFlying()
+                boolean badDir = module.mc.player.isGliding()
                         && module.mc.player.getVelocity().horizontalLength() > 0.5
                         && Math.abs(HighwayFly.scalarProd(HighwayFly.as2d(normal),
                                 HighwayFly.extractXZ(module.mc.player.getVelocity())))
