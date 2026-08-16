@@ -46,7 +46,7 @@ public class Takeoff extends Module {
 
     @Override
     public void onActivate() {
-        if (!mc.player.isOnGround()) {
+        if (!mc.player.onGround()) {
             error("Player is not on ground.");
             toggle();
             return;
@@ -65,13 +65,13 @@ public class Takeoff extends Module {
         deploy = delay.get();
         tick = 0;
 
-        mc.player.setPitch(pitch.get().floatValue());
-        mc.options.jumpKey.setPressed(true);
+        mc.player.setXRot(pitch.get().floatValue());
+        mc.options.keyJump.setDown(true);
     }
 
     @Override
     public void onDeactivate() {
-        mc.options.jumpKey.setPressed(false);
+        mc.options.keyJump.setDown(false);
     }
 
     @EventHandler
@@ -83,11 +83,11 @@ public class Takeoff extends Module {
         }
 
         if (tick == 1)
-            mc.options.jumpKey.setPressed(false);
+            mc.options.keyJump.setDown(false);
         else if (tick >= deploy + 1)
-            mc.options.jumpKey.setPressed(false);
+            mc.options.keyJump.setDown(false);
         else if (tick >= deploy)
-            mc.options.jumpKey.setPressed(true);
+            mc.options.keyJump.setDown(true);
 
         tick++;
     }

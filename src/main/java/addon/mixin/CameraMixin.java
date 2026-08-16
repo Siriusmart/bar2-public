@@ -9,11 +9,8 @@ import java.util.List;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 import meteordevelopment.meteorclient.mixininterface.ICamera;
@@ -22,10 +19,8 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.render.FreeLook;
 import meteordevelopment.meteorclient.systems.modules.render.Freecam;
 import meteordevelopment.meteorclient.systems.modules.world.HighwayBuilder;
-import net.minecraft.client.render.Camera;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.BlockView;
+import net.minecraft.client.Camera;
+import net.minecraft.util.Mth;
 import addon.modules.ClimbFly;
 import addon.modules.HighwayDigger;
 import addon.modules.HighwayFly;
@@ -35,26 +30,17 @@ import addon.modules.LevelFly;
 @Mixin(Camera.class)
 public abstract class CameraMixin implements ICamera {
     @Shadow
-    private boolean thirdPerson;
+    private boolean detached;
 
     @Shadow
-    private float yaw;
+    private float yRot;
     @Shadow
-    private float pitch;
+    private float xRot;
 
     @Shadow
-    protected abstract void setRotation(float yaw, float pitch);
+    protected abstract void setRotation(float yRot, float xRot);
 
-    @Unique
-    private float tickDelta;
-
-    @Inject(method = "update", at = @At("HEAD"))
-    private void onUpdateHead(BlockView area, Entity focusedEntity, boolean thirdPerson, boolean inverseView,
-            float tickDelta, CallbackInfo info) {
-        this.tickDelta = tickDelta;
-    }
-
-    @ModifyArgs(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Camera;setRotation(FF)V"))
+    @ModifyArgs(method = "alignWithEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setRotation(FF)V"))
     private void onUpdateSetRotationArgs(Args args) {
         final List<Class<? extends Module>> incompats = List.of(
                 Freecam.class,
@@ -89,7 +75,7 @@ public abstract class CameraMixin implements ICamera {
     }
 
     @Override
-    public void setRot(double yaw, double pitch) {
-        setRotation((float) yaw, (float) MathHelper.clamp(pitch, -90, 90));
+    public void meteor$setRot(double yaw, double pitch) {
+        setRotation((float) yaw, (float) Mth.clamp(pitch, -90, 90));
     }
 }

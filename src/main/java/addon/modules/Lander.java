@@ -120,30 +120,30 @@ public class Lander extends Module {
         targetZ = targetZs.get();
 
         if (!retainAngles) {
-            cameraPitch = mc.player.getPitch();
-            cameraYaw = mc.player.getYaw();
+            cameraPitch = mc.player.getXRot();
+            cameraYaw = mc.player.getYRot();
             retainAngles = false;
         }
-        mc.player.setPitch(-15);
+        mc.player.setXRot(-15);
     }
 
     @Override
     public void onDeactivate() {
-        mc.options.sneakKey.setPressed(false);
-        mc.options.rightKey.setPressed(false);
-        mc.options.leftKey.setPressed(false);
-        mc.options.forwardKey.setPressed(false);
-        mc.options.backKey.setPressed(false);
+        mc.options.keyShift.setDown(false);
+        mc.options.keyRight.setDown(false);
+        mc.options.keyLeft.setDown(false);
+        mc.options.keyUp.setDown(false);
+        mc.options.keyDown.setDown(false);
 
-        mc.player.setPitch(cameraPitch);
+        mc.player.setXRot(cameraPitch);
 
-        if (mc.player.isOnGround() || (exitOnFluid.get() && mc.player.isInFluid()))
+        if (mc.player.onGround() || (exitOnFluid.get() && mc.player.isInLiquid()))
             mc.player.stopFallFlying();
     }
 
     @EventHandler
     public void onTick(TickEvent.Pre _e) {
-        if (mc.player.isOnGround() || (exitOnFluid.get() && mc.player.isInFluid())) {
+        if (mc.player.onGround() || (exitOnFluid.get() && mc.player.isInLiquid())) {
             toggle();
 
             if (debugMessages.get())
@@ -151,12 +151,12 @@ public class Lander extends Module {
             return;
         }
 
-        mc.player.setPitch(-15);
+        mc.player.setXRot(-15);
 
         if (mode.get() == TargetMode.Relaxed)
             return;
 
-        mc.options.sneakKey.setPressed(true);
+        mc.options.keyShift.setDown(true);
 
         if (mode.get() == TargetMode.SneakRelaxed)
             return;
@@ -164,26 +164,26 @@ public class Lander extends Module {
         double dx = targetX - mc.player.getX();
         double dz = targetZ - mc.player.getZ();
 
-        mc.options.rightKey.setPressed(false);
-        mc.options.leftKey.setPressed(false);
-        mc.options.forwardKey.setPressed(false);
-        mc.options.backKey.setPressed(false);
+        mc.options.keyRight.setDown(false);
+        mc.options.keyLeft.setDown(false);
+        mc.options.keyUp.setDown(false);
+        mc.options.keyDown.setDown(false);
 
         double deviation = Math.sqrt(Math.pow(dx, 2) + Math.pow(dz, 2));
 
         if (deviation < maxDeviate.get()) {
-            mc.player.setVelocity(0, mc.player.getVelocity().y, 0);
+            mc.player.setDeltaMovement(0, mc.player.getDeltaMovement().y, 0);
             return;
         } else {
             deviation = Math.max(deviation, 10);
-            mc.player.setVelocity(dx / deviation * hSpeed.get(), mc.player.getVelocity().y,
+            mc.player.setDeltaMovement(dx / deviation * hSpeed.get(), mc.player.getDeltaMovement().y,
                     dz / deviation * hSpeed.get());
             return;
         }
 
         /*
-         * double cos = Math.cos(Math.toRadians(mc.player.getYaw()));
-         * double sin = Math.sin(Math.toRadians(mc.player.getYaw()));
+         * double cos = Math.cos(Math.toRadians(mc.player.getYRot()));
+         * double sin = Math.sin(Math.toRadians(mc.player.getYRot()));
          * double normalised_x = dx * cos + dz * sin;
          * double normalised_z = dz * cos - dx * sin;
          * 
@@ -193,32 +193,32 @@ public class Lander extends Module {
          * 
          * switch (octant % 8) {
          * case 0:
-         * mc.options.rightKey.setPressed(true);
+         * mc.options.keyRight.setDown(true);
          * break;
          * case 1:
-         * mc.options.rightKey.setPressed(true);
-         * mc.options.forwardKey.setPressed(true);
+         * mc.options.keyRight.setDown(true);
+         * mc.options.keyUp.setDown(true);
          * break;
          * case 2:
-         * mc.options.forwardKey.setPressed(true);
+         * mc.options.keyUp.setDown(true);
          * break;
          * case 3:
-         * mc.options.forwardKey.setPressed(true);
-         * mc.options.leftKey.setPressed(true);
+         * mc.options.keyUp.setDown(true);
+         * mc.options.keyLeft.setDown(true);
          * break;
          * case 4:
-         * mc.options.leftKey.setPressed(true);
+         * mc.options.keyLeft.setDown(true);
          * break;
          * case 5:
-         * mc.options.backKey.setPressed(true);
-         * mc.options.leftKey.setPressed(true);
+         * mc.options.keyDown.setDown(true);
+         * mc.options.keyLeft.setDown(true);
          * break;
          * case 6:
-         * mc.options.backKey.setPressed(true);
+         * mc.options.keyDown.setDown(true);
          * break;
          * case 7:
-         * mc.options.backKey.setPressed(true);
-         * mc.options.rightKey.setPressed(true);
+         * mc.options.keyDown.setDown(true);
+         * mc.options.keyRight.setDown(true);
          * break;
          * }
          */

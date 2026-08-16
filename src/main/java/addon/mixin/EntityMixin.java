@@ -19,7 +19,7 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.render.FreeLook;
 import meteordevelopment.meteorclient.systems.modules.render.Freecam;
 import meteordevelopment.meteorclient.systems.modules.world.HighwayBuilder;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 import addon.modules.ClimbFly;
 import addon.modules.HighwayDigger;
 import addon.modules.HighwayFly;
@@ -28,7 +28,7 @@ import addon.modules.LevelFly;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin {
-    @Inject(method = "changeLookDirection", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "turn", at = @At("HEAD"), cancellable = true)
     private void updateChangeLookDirection(double cursorDeltaX, double cursorDeltaY, CallbackInfo ci) {
         if ((Object) this != mc.player)
             return;
@@ -68,7 +68,7 @@ public abstract class EntityMixin {
             float sensitivity = freeLook.sensitivity.get().floatValue();
             levelFly.cameraPitch += (float) (cursorDeltaY / sensitivity);
             levelFly.cameraYaw += (float) (cursorDeltaX / sensitivity);
-            mc.player.setYaw(levelFly.cameraYaw);
+            mc.player.setYRot(levelFly.cameraYaw);
 
             if (Math.abs(levelFly.cameraPitch) > 90.0F)
                 levelFly.cameraPitch = levelFly.cameraPitch > 0.0F ? 90.0F : -90.0F;
@@ -77,7 +77,7 @@ public abstract class EntityMixin {
             float sensitivity = freeLook.sensitivity.get().floatValue();
             lander.cameraPitch += (float) (cursorDeltaY / sensitivity);
             lander.cameraYaw += (float) (cursorDeltaX / sensitivity);
-            mc.player.setYaw(lander.cameraYaw);
+            mc.player.setYRot(lander.cameraYaw);
 
             if (Math.abs(lander.cameraPitch) > 90.0F)
                 lander.cameraPitch = lander.cameraPitch > 0.0F ? 90.0F : -90.0F;
@@ -86,7 +86,7 @@ public abstract class EntityMixin {
             float sensitivity = freeLook.sensitivity.get().floatValue();
             climiFly.cameraPitch += (float) (cursorDeltaY / sensitivity);
             climiFly.cameraYaw += (float) (cursorDeltaX / sensitivity);
-            mc.player.setYaw(climiFly.cameraYaw);
+            mc.player.setYRot(climiFly.cameraYaw);
 
             if (Math.abs(climiFly.cameraPitch) > 90.0F)
                 climiFly.cameraPitch = climiFly.cameraPitch > 0.0F ? 90.0F : -90.0F;

@@ -12,7 +12,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.movement.elytrafly.ElytraFly;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 import addon.Bar2Dee2;
 
 public class LevelFly extends Module {
@@ -100,8 +100,8 @@ public class LevelFly extends Module {
                 Modules.get().get(module).toggle();
         }
 
-        cameraPitch = mc.player.getPitch();
-        cameraYaw = mc.player.getYaw();
+        cameraPitch = mc.player.getXRot();
+        cameraYaw = mc.player.getYRot();
         upperBound = (float) yLevel.get() - 0.3f;
         lowerBound = upperBound + 0.5f;
 
@@ -113,7 +113,7 @@ public class LevelFly extends Module {
             climbFly.targetLevel.set(yLevel.get().doubleValue());
             climbFly.toggle();
         } else {
-            mc.player.setPitch(-40);
+            mc.player.setXRot(-40);
         }
     }
 
@@ -123,7 +123,7 @@ public class LevelFly extends Module {
             if (Modules.get().get(module).isActive())
                 Modules.get().get(module).toggle();
         }
-        mc.player.setPitch(cameraPitch);
+        mc.player.setXRot(cameraPitch);
     }
 
     @EventHandler
@@ -137,13 +137,13 @@ public class LevelFly extends Module {
             pitchingDown = true;
         }
 
-        if (mc.player.getPos().getY() < upperBound - 1 && recover.get()) {
+        if (mc.player.position().y() < upperBound - 1 && recover.get()) {
             if (!Modules.get().isActive(ClimbFly.class))
                 Modules.get().get(ClimbFly.class).toggle();
             return;
         }
 
-        mc.player.setPitch((pitchingDown ? mc.player.getY() >= lowerBound + 0.1 ? pressDownAngle.get() : pitchDownAngle.get() : pitchUpAngle.get()).floatValue());
-        cameraPitch = MathHelper.clamp(cameraPitch, -90, 90);
+        mc.player.setXRot((pitchingDown ? mc.player.getY() >= lowerBound + 0.1 ? pressDownAngle.get() : pitchDownAngle.get() : pitchUpAngle.get()).floatValue());
+        cameraPitch = Mth.clamp(cameraPitch, -90, 90);
     }
 }

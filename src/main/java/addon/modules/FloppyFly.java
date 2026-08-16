@@ -9,8 +9,8 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import addon.Bar2Dee2;
 
 public class FloppyFly extends Module {
@@ -59,33 +59,33 @@ public class FloppyFly extends Module {
 
     @EventHandler
     public void onClientMove(PlayerMoveEvent event) {
-        if (this.mc.options.sneakKey.isPressed() && !this.mc.player.isOnGround())
-            this.mc.player.setVelocity(new Vec3d(0.0D, (this.mc.player.getVelocity()).y, 0.0D));
+        if (this.mc.options.keyShift.isDown() && !this.mc.player.onGround())
+            this.mc.player.setDeltaMovement(new Vec3(0.0D, (this.mc.player.getDeltaMovement()).y, 0.0D));
     }
 
     @EventHandler
     private void TickEvent(TickEvent.Pre e) {
 
-        // double currentVel = Math.abs((this.mc.player.getVelocity()).x) +
-        // Math.abs((this.mc.player.getVelocity()).y) +
-        // Math.abs((this.mc.player.getVelocity()).z);
-        float radianYaw = (float) Math.toRadians(this.mc.player.getYaw());
+        // double currentVel = Math.abs((this.mc.player.getDeltaMovement()).x) +
+        // Math.abs((this.mc.player.getDeltaMovement()).y) +
+        // Math.abs((this.mc.player.getDeltaMovement()).z);
+        float radianYaw = (float) Math.toRadians(this.mc.player.getYRot());
         float boost = ((Double) this.settingBoost.get()).floatValue();
         float boost2 = ((Double) this.settingBoost2.get()).floatValue();
         if (this.mc.player.isFallFlying()) {
-            if (Math.round(Utils.getPlayerSpeed().horizontalLength()) > ((Integer) this.maximumSpeed.get())
+            if (Math.round(Utils.getPlayerSpeed().horizontalDistance()) > ((Integer) this.maximumSpeed.get())
                     .intValue()) {
-                this.mc.player.addVelocity((MathHelper.sin(radianYaw) * -boost2), 0.0D,
-                        (MathHelper.cos(radianYaw) * boost2));
+                this.mc.player.push((Mth.sin(radianYaw) * -boost2), 0.0D,
+                        (Mth.cos(radianYaw) * boost2));
                 return;
             }
-            if (Math.round(Utils.getPlayerSpeed().horizontalLength()) < ((Integer) this.maximumSpeed.get()).intValue())
-                if (this.mc.options.backKey.isPressed()) {
-                    this.mc.player.addVelocity((MathHelper.sin(radianYaw) * boost), 0.0D,
-                            (MathHelper.cos(radianYaw) * -boost));
-                } else if (this.mc.player.getPitch() > boostPitch.get()) {
-                    this.mc.player.addVelocity((MathHelper.sin(radianYaw) * -boost), 0.0D,
-                            (MathHelper.cos(radianYaw) * boost));
+            if (Math.round(Utils.getPlayerSpeed().horizontalDistance()) < ((Integer) this.maximumSpeed.get()).intValue())
+                if (this.mc.options.keyDown.isDown()) {
+                    this.mc.player.push((Mth.sin(radianYaw) * boost), 0.0D,
+                            (Mth.cos(radianYaw) * -boost));
+                } else if (this.mc.player.getXRot() > boostPitch.get()) {
+                    this.mc.player.push((Mth.sin(radianYaw) * -boost), 0.0D,
+                            (Mth.cos(radianYaw) * boost));
                 }
         }
     }

@@ -22,13 +22,13 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.movement.Scaffold;
 import meteordevelopment.meteorclient.systems.modules.movement.elytrafly.ElytraFly;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.Items;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
-import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.Items;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.phys.shapes.Shapes;
 import addon.Bar2Dee2;
 import addon.modules.Lander.TargetMode;
 
@@ -214,8 +214,8 @@ public class HighwayFly extends Module {
         return new Vector2i(v3.getX(), v3.getZ());
     }
 
-    public static Vector2d extractXZ(Vec3d v3) {
-        return new Vector2d(v3.getX(), v3.getZ());
+    public static Vector2d extractXZ(Vec3 v3) {
+        return new Vector2d(v3.x(), v3.z());
     }
 
     public static Vector2d as2d(Vector2i v2) {
@@ -282,8 +282,8 @@ public class HighwayFly extends Module {
     }
 
     public boolean checkClearSingle(BlockPos base) {
-        return mc.world.getBlockState(base.up(1)).isAir()
-                && mc.world.getBlockState(base.up(2)).isAir() && mc.world.getBlockState(base.up(3)).isAir();
+        return mc.level.getBlockState(base.above(1)).isAir()
+                && mc.level.getBlockState(base.above(2)).isAir() && mc.level.getBlockState(base.above(3)).isAir();
     }
 
     public Optional<Vector2i> checkClearRow(BlockPos origin) {
@@ -295,7 +295,7 @@ public class HighwayFly extends Module {
         int min = 0, max = 0;
 
         for (int i = diggerLookBack.get(); i <= limit; i++) {
-            if (!checkClearSingle(origin.add(unit.multiply(i)))) {
+            if (!checkClearSingle(origin.offset(unit.multiply(i)))) {
                 if (!found)
                     min = i;
 
@@ -317,7 +317,7 @@ public class HighwayFly extends Module {
         if (oct % 2 == 0) {
             int offset = digMode.get().all ? 0 : effWidth % 2 == 0 ? effWidth / 2 - 1 : Math.floorDiv(effWidth, 2);
             for (int i = rw1 + offset; i < lw1 - offset; i++) {
-                Optional<Vector2i> res = checkClearRow(origin.add(normal.multiply(i)));
+                Optional<Vector2i> res = checkClearRow(origin.offset(normal.multiply(i)));
                 if (res.isPresent()) {
                     if (!found) {
                         found = true;
@@ -337,7 +337,7 @@ public class HighwayFly extends Module {
             int offset2 = Math.ceilDiv(lw2 - rw2 - 3, 2);
 
             for (int i = rw1 + offset1; i < lw1 - offset1; i++) {
-                Optional<Vector2i> res = checkClearRow(origin1.add(normal.multiply(i)));
+                Optional<Vector2i> res = checkClearRow(origin1.offset(normal.multiply(i)));
                 if (res.isPresent()) {
                     if (!found) {
                         found = true;
@@ -351,7 +351,7 @@ public class HighwayFly extends Module {
             }
 
             for (int i = rw2 + offset2; i < lw2 - offset2; i++) {
-                Optional<Vector2i> res = checkClearRow(origin2.add(normal.multiply(i)));
+                Optional<Vector2i> res = checkClearRow(origin2.offset(normal.multiply(i)));
                 if (res.isPresent()) {
                     if (!found) {
                         found = true;
@@ -371,8 +371,8 @@ public class HighwayFly extends Module {
     }
 
     public boolean checkHealthSingle(BlockPos base) {
-        return !mc.world.getBlockState(base).isAir() && mc.world.getBlockState(base.up(1)).isAir()
-                && mc.world.getBlockState(base.up(2)).isAir() && mc.world.getBlockState(base.up(3)).isAir();
+        return !mc.level.getBlockState(base).isAir() && mc.level.getBlockState(base.above(1)).isAir()
+                && mc.level.getBlockState(base.above(2)).isAir() && mc.level.getBlockState(base.above(3)).isAir();
     }
 
     public float checkHealth(BlockPos origin, int octant) {
@@ -382,7 +382,7 @@ public class HighwayFly extends Module {
         int limit = lookAhead.get();
 
         for (int i = 0; i < limit; i++) {
-            if (checkHealthSingle(origin.add(unit.multiply(i))))
+            if (checkHealthSingle(origin.offset(unit.multiply(i))))
                 healthy++;
         }
 
@@ -398,9 +398,9 @@ public class HighwayFly extends Module {
         Vec3i normal = normalVector(octant);
         float threshold = minHealth.get().floatValue();
 
-        while (checkHealth(origin.add(normal.multiply(left)), octant) >= threshold && left - right <= maxWidth.get())
+        while (checkHealth(origin.offset(normal.multiply(left)), octant) >= threshold && left - right <= maxWidth.get())
             left++;
-        while (checkHealth(origin.add(normal.multiply(right - 1)), octant) >= threshold
+        while (checkHealth(origin.offset(normal.multiply(right - 1)), octant) >= threshold
                 && left - right <= maxWidth.get())
             right--;
 
@@ -531,14 +531,14 @@ public class HighwayFly extends Module {
         }
 
         if (autoDetect.get()) {
-            if (!mc.player.isOnGround()) {
+            if (!mc.player.onGround()) {
                 error("Player not on ground.");
                 toggle();
                 return;
             }
 
-            o1 = mc.player.getBlockPos().down(1);
-            Optional<Vec3i> found = getDetail(o1, (float) trueYaw(mc.player.getYaw()));
+            o1 = mc.player.blockPosition().below(1);
+            Optional<Vec3i> found = getDetail(o1, (float) trueYaw(mc.player.getYRot()));
             if (found.isEmpty()) {
                 error("No highways found.");
                 toggle();
@@ -547,11 +547,11 @@ public class HighwayFly extends Module {
 
             if (found.get().getX() % 2 != 0) {
                 o2 = origin2(found.get().getX(), o1);
-                Optional<Vec3i> origin2res = getDetail(o2, (float) trueYaw(mc.player.getYaw()));
+                Optional<Vec3i> origin2res = getDetail(o2, (float) trueYaw(mc.player.getYRot()));
 
                 if (!origin2res.isPresent()) {
-                    o2 = o2.add(normalVector(found.get().getX()));
-                    origin2res = getDetail(o2, (float) trueYaw(mc.player.getYaw()));
+                    o2 = o2.offset(normalVector(found.get().getX()));
+                    origin2res = getDetail(o2, (float) trueYaw(mc.player.getYRot()));
                 }
 
                 if (origin2res.isEmpty() || origin2res.get().getX() != found.get().getX()) {
@@ -587,10 +587,10 @@ public class HighwayFly extends Module {
         rw2 = rightWidth2.get();
 
         if (oct % 2 != 0 && lw1 - rw1 == lw2 - rw2) {
-            BlockPos edge1 = o1.add(normalVector(oct).multiply(lw1 - 1));
-            BlockPos edge2 = o2.add(normalVector(oct).multiply(lw2 - 1));
+            BlockPos edge1 = o1.offset(normalVector(oct).multiply(lw1 - 1));
+            BlockPos edge2 = o2.offset(normalVector(oct).multiply(lw2 - 1));
 
-            if (edge1.add(divide(normalVector(oct).add(unitVector(oct)), 2)).equals(edge2)) {
+            if (edge1.offset(divide(normalVector(oct).offset(unitVector(oct)), 2)).equals(edge2)) {
                 lw2 -= 1;
                 leftWidth2.set(lw2);
             } else {
@@ -601,8 +601,8 @@ public class HighwayFly extends Module {
             warning("Highway width bogus, settings have been modified.");
         }
 
-        cameraPitch = mc.player.getPitch();
-        cameraYaw = mc.player.getYaw();
+        cameraPitch = mc.player.getXRot();
+        cameraYaw = mc.player.getYRot();
 
         effWidth = oct % 2 == 0 ? lw1 - rw1 : Math.max(lw1 - rw1, lw2 - rw2);
 
@@ -634,8 +634,8 @@ public class HighwayFly extends Module {
         }
 
         if (!mc.player.isFallFlying()) {
-            mc.player.setPitch(cameraPitch);
-            mc.player.setYaw(cameraYaw);
+            mc.player.setXRot(cameraPitch);
+            mc.player.setYRot(cameraYaw);
             return;
         }
 
@@ -649,45 +649,45 @@ public class HighwayFly extends Module {
 
     public BlockPos gefEffOrigin() {
         if (oct % 2 == 0) {
-            return o1.add(normalVector(oct).multiply(Math.floorDiv(lw1 + rw1 - 1, 2)));
+            return o1.offset(normalVector(oct).multiply(Math.floorDiv(lw1 + rw1 - 1, 2)));
         }
 
         if (lw1 - rw1 == lw2 - rw2) {
-            BlockPos center1 = o1.add(normalVector(oct).multiply(Math.floorDiv(lw1 + rw1 - 1, 2)));
-            BlockPos center2 = o2.add(normalVector(oct).multiply(Math.floorDiv(lw2 + rw2 - 1, 2)));
+            BlockPos center1 = o1.offset(normalVector(oct).multiply(Math.floorDiv(lw1 + rw1 - 1, 2)));
+            BlockPos center2 = o2.offset(normalVector(oct).multiply(Math.floorDiv(lw2 + rw2 - 1, 2)));
             BlockPos diff = center2.subtract(center1);
             int dotproduct = scalarProd(extractXZ(diff), extractXZ(normalVector(oct)));
 
             return dotproduct > 0 ? center1 : center2;
         } else if ((lw1 - rw1) % 2 == 0) {
-            return o2.add(normalVector(oct).multiply(Math.floorDiv(lw2 + rw2 - 1, 2)));
+            return o2.offset(normalVector(oct).multiply(Math.floorDiv(lw2 + rw2 - 1, 2)));
         } else {
-            return o1.add(normalVector(oct).multiply(Math.floorDiv(lw1 + rw1 - 1, 2)));
+            return o1.offset(normalVector(oct).multiply(Math.floorDiv(lw1 + rw1 - 1, 2)));
         }
     }
 
     public BlockPos intersection() {
-        BlockPos blockPos = mc.player.getBlockPos().down(1);
+        BlockPos blockPos = mc.player.blockPosition().below(1);
         Vec3i normal = normalVector(oct);
         int multiplier = scalarProd(extractXZ(effOrigin.subtract(blockPos)), extractXZ(normal));
 
         BlockPos intersect;
 
         if (oct % 2 == 0) {
-            intersect = blockPos.add(normal.multiply(multiplier));
+            intersect = blockPos.offset(normal.multiply(multiplier));
         } else if (multiplier % 2 == 0) {
-            intersect = blockPos.add(normal.multiply(multiplier / 2));
+            intersect = blockPos.offset(normal.multiply(multiplier / 2));
         } else {
-            blockPos = blockPos.add(divide(normal.add(unitVector(oct)), 2));
+            blockPos = blockPos.offset(divide(normal.offset(unitVector(oct)), 2));
             multiplier = scalarProd(extractXZ(effOrigin.subtract(blockPos)), extractXZ(normal));
-            intersect = blockPos.add(normal.multiply(multiplier / 2));
+            intersect = blockPos.offset(normal.multiply(multiplier / 2));
         }
 
-        return intersect.withY(level);
+        return intersect.atY(level);
     }
 
     public BlockPos intersectionWith(BlockPos specificOrigin) {
-        BlockPos blockPos = mc.player.getBlockPos().down(1);
+        BlockPos blockPos = mc.player.blockPosition().below(1);
         return intersectionWith(specificOrigin, blockPos);
     }
 
@@ -698,16 +698,16 @@ public class HighwayFly extends Module {
         BlockPos intersect;
 
         if (oct % 2 == 0) {
-            intersect = blockPos.add(normal.multiply(multiplier));
+            intersect = blockPos.offset(normal.multiply(multiplier));
         } else if (multiplier % 2 == 0) {
-            intersect = blockPos.add(normal.multiply(multiplier / 2));
+            intersect = blockPos.offset(normal.multiply(multiplier / 2));
         } else {
-            blockPos = blockPos.add(divide(normal.add(unitVector(oct)), 2));
+            blockPos = blockPos.offset(divide(normal.offset(unitVector(oct)), 2));
             multiplier = scalarProd(extractXZ(specificOrigin.subtract(blockPos)), extractXZ(normal));
-            intersect = blockPos.add(normal.multiply(multiplier / 2));
+            intersect = blockPos.offset(normal.multiply(multiplier / 2));
         }
 
-        return intersect.withY(level);
+        return intersect.atY(level);
     }
 
     public BlockPos diggerIntersect(BlockPos blockPos) {
@@ -716,20 +716,20 @@ public class HighwayFly extends Module {
         if (Math.min(lw1 - rw1, lw2 - rw2) % 2 == 0)
             return intersectionWith(effOrigin, blockPos);
         if (lw1 - rw1 < lw2 - rw2)
-            return intersectionWith(o2.add(normalVector(oct).multiply(Math.floorDiv(lw2 + rw2 - 1, 2))), blockPos);
+            return intersectionWith(o2.offset(normalVector(oct).multiply(Math.floorDiv(lw2 + rw2 - 1, 2))), blockPos);
         else
-            return intersectionWith(o1.add(normalVector(oct).multiply(Math.floorDiv(lw1 + rw1 - 1, 2))), blockPos);
+            return intersectionWith(o1.offset(normalVector(oct).multiply(Math.floorDiv(lw1 + rw1 - 1, 2))), blockPos);
     }
 
     private boolean canMine(BlockPos pos) {
-        BlockState state = mc.world.getBlockState(pos);
-        if (state.getHardness(mc.world, pos) < 0)
+        BlockState state = mc.level.getBlockState(pos);
+        if (state.getDestroySpeed(mc.level, pos) < 0)
             return false;
-        return state.getOutlineShape(mc.world, pos) != VoxelShapes.empty();
+        return state.getShape(mc.level, pos) != Shapes.empty();
     }
 
     private boolean blockInFront(int height) {
-        return blockInFront(height, mc.player.getBlockPos());
+        return blockInFront(height, mc.player.blockPosition());
     }
 
     private boolean blockInFront(int height, BlockPos pos) {
@@ -737,22 +737,22 @@ public class HighwayFly extends Module {
             int lookAhead = antiCollisionLookForward.get();
             for (int i = 1; i <= lookAhead; i++) {
                 if (canMine(
-                        pos.withY(level + height)
-                                .add(unitVector(oct).multiply(i))))
+                        pos.atY(level + height)
+                                .offset(unitVector(oct).multiply(i))))
                     return true;
             }
         } else {
             int lookAhead = antiCollisionLookForwardDiag.get();
             for (int i = 0; i < lookAhead; i++) {
                 if (canMine(
-                        pos.withY(level + height)
-                                .add(unitVector(oct).multiply(i))
-                                .add(divide(unitVector(oct).add(normalVector(oct)), 2)))
+                        pos.atY(level + height)
+                                .offset(unitVector(oct).multiply(i))
+                                .offset(divide(unitVector(oct).offset(normalVector(oct)), 2)))
                         ||
                         canMine(
-                                pos.withY(level + height)
-                                        .add(unitVector(oct).multiply(i))
-                                        .add(divide(
+                                pos.atY(level + height)
+                                        .offset(unitVector(oct).multiply(i))
+                                        .offset(divide(
                                                 unitVector(oct).subtract(normalVector(oct)), 2))))
                     return true;
             }
@@ -764,15 +764,15 @@ public class HighwayFly extends Module {
     private Optional<BlockPos> digStartPos() {
         BlockPos intersect = intersectionWith(o1);
         BlockPos effIntersect = oct % 2 == 1 && !digMode.get().all ? intersection()
-                : diggerIntersect(mc.player.getBlockPos());
+                : diggerIntersect(mc.player.blockPosition());
         Optional<Vector2i> minmax = checkClear(intersect);
 
         if (minmax.isEmpty())
             return Optional.empty();
 
         Vec3i unit = HighwayFly.unitVector(oct);
-        digUntil = effIntersect.add(unit.multiply(minmax.get().y() + oct % 2)).up(1);
-        return Optional.of(effIntersect.add(unit.multiply(minmax.get().x() - 1)).up(1));
+        digUntil = effIntersect.offset(unit.multiply(minmax.get().y() + oct % 2)).above(1);
+        return Optional.of(effIntersect.offset(unit.multiply(minmax.get().x() - 1)).above(1));
     }
 
     private State state;
@@ -800,7 +800,7 @@ public class HighwayFly extends Module {
                     diggerWidth = 2;
 
                 digger.width.set(diggerWidth);
-                module.mc.player.setYaw((float) HighwayFly.mcYaw(HighwayFly.octantTrueYaw(module.oct)));
+                module.mc.player.setYRot((float) HighwayFly.mcYaw(HighwayFly.octantTrueYaw(module.oct)));
 
                 if (!digger.isActive())
                     digger.toggle();
@@ -809,7 +809,7 @@ public class HighwayFly extends Module {
             @Override
             void tick(HighwayFly module) {
                 if (HighwayFly.scalarProd(
-                        HighwayFly.extractXZ(module.mc.player.getBlockPos().subtract(module.digUntil)),
+                        HighwayFly.extractXZ(module.mc.player.blockPosition().subtract(module.digUntil)),
                         HighwayFly.extractXZ(HighwayFly.unitVector(module.oct))) >= 0) {
 
                     if (module.digStartPos().isPresent())
@@ -838,7 +838,7 @@ public class HighwayFly extends Module {
 
             @Override
             void start(HighwayFly module) {
-                if (module.mc.player.getVelocity().horizontalLength() != 0 && !module.mc.player.isInFluid()) {
+                if (module.mc.player.getDeltaMovement().horizontalDistance() != 0 && !module.mc.player.isInLiquid()) {
                     started = false;
                     return;
                 }
@@ -846,7 +846,7 @@ public class HighwayFly extends Module {
 
                 if (!module.digMode.get().dig) {
                     nextIsDig = false;
-                    targetPos = findClearToFly(module).up(1);
+                    targetPos = findClearToFly(module).above(1);
                     module.baritone.getPathingBehavior().cancelEverything();
                     module.baritone.getCustomGoalProcess().setGoalAndPath(new GoalBlock(targetPos));
                     return;
@@ -866,9 +866,9 @@ public class HighwayFly extends Module {
 
                 targetPos = startPos.get();
 
-                if (scalarProd(extractXZ(targetPos.subtract(module.mc.player.getBlockPos())),
+                if (scalarProd(extractXZ(targetPos.subtract(module.mc.player.blockPosition())),
                         extractXZ(normalVector(module.oct))) == 0
-                        && scalarProd(extractXZ(targetPos.subtract(module.mc.player.getBlockPos())),
+                        && scalarProd(extractXZ(targetPos.subtract(module.mc.player.blockPosition())),
                                 extractXZ(unitVector(module.oct))) >= 0) {
                     if (module.debugMessages.get())
                         module.info("Stared DIGGING because no baritone needed.");
@@ -884,14 +884,14 @@ public class HighwayFly extends Module {
             @Override
             void tick(HighwayFly module) {
                 if (!started)
-                    if (module.mc.player.getVelocity().horizontalLength() == 0 || module.mc.player.isInFluid()) {
+                    if (module.mc.player.getDeltaMovement().horizontalDistance() == 0 || module.mc.player.isInLiquid()) {
                         started = true;
                         start(module);
                     } else
                         return;
 
                 if (!module.mc.player.isFallFlying() && !module.baritone.getCustomGoalProcess().isActive()) {
-                    if (!module.mc.player.getBlockPos().equals(targetPos)) {
+                    if (!module.mc.player.blockPosition().equals(targetPos)) {
                         if (++barAttempt > module.maxRetries.get()) {
                             module.toggle();
                             module.error("Given up restarting Baritone at " + module.maxRetries.get() + "retries.");
@@ -923,7 +923,7 @@ public class HighwayFly extends Module {
             }
 
             boolean isClearToFly(HighwayFly module, BlockPos pos) {
-                return !(module.canMine(pos.up(1)) || module.canMine(pos.up(2)) || module.canMine(pos.up(3))
+                return !(module.canMine(pos.above(1)) || module.canMine(pos.above(2)) || module.canMine(pos.above(3))
                         || module.blockInFront(2, pos)
                         || module.blockInFront(3, pos));
             }
@@ -935,7 +935,7 @@ public class HighwayFly extends Module {
                 int limit = module.clearToFlyLookForward.get();
 
                 for (int i = 0; i < limit; i++) {
-                    cursor = cursor.add(unit);
+                    cursor = cursor.offset(unit);
 
                     if (isClearToFly(module, cursor)) {
                         isClearToFly = true;
@@ -945,7 +945,7 @@ public class HighwayFly extends Module {
 
                 isClearToFly = false;
 
-                return cursor.add(unit);
+                return cursor.offset(unit);
             }
         },
         Landing {
@@ -960,13 +960,13 @@ public class HighwayFly extends Module {
 
             @Override
             void tick(HighwayFly module) {
-                if (module.mc.player.getBlockPos().getY() == module.level + 1
-                        && module.mc.world.getBlockState(module.mc.player.getBlockPos().withY(module.level)).isAir()
+                if (module.mc.player.blockPosition().getY() == module.level + 1
+                        && module.mc.level.getBlockState(module.mc.player.blockPosition().atY(module.level)).isAir()
                         && !Modules.get().isActive(Scaffold.class))
                     Modules.get().get(Scaffold.class).toggle();
 
                 if (Modules.get().isActive(Scaffold.class)
-                        && !module.mc.world.getBlockState(module.mc.player.getBlockPos().withY(module.level)).isAir()) {
+                        && !module.mc.level.getBlockState(module.mc.player.blockPosition().atY(module.level)).isAir()) {
                     Modules.get().get(Scaffold.class).toggle();
                 }
 
@@ -991,14 +991,14 @@ public class HighwayFly extends Module {
 
             @Override
             public void start(HighwayFly module) {
-                if (!module.mc.player.isOnGround()) {
+                if (!module.mc.player.onGround()) {
                     started = false;
                     return;
                 }
 
                 started = true;
 
-                module.mc.player.setYaw((float) HighwayFly.mcYaw(HighwayFly.octantTrueYaw(module.oct)));
+                module.mc.player.setYRot((float) HighwayFly.mcYaw(HighwayFly.octantTrueYaw(module.oct)));
                 normal = HighwayFly.extractXZ(HighwayFly.normalVector(module.oct));
                 LevelFly levelFly = Modules.get().get(LevelFly.class);
                 levelFly.yLevel.set(module.level + 2);
@@ -1013,7 +1013,7 @@ public class HighwayFly extends Module {
             @Override
             public void tick(HighwayFly module) {
                 if (!started) {
-                    if (!module.mc.player.isOnGround())
+                    if (!module.mc.player.onGround())
                         return;
                     started = true;
                 }
@@ -1021,7 +1021,7 @@ public class HighwayFly extends Module {
                 if (grace != 0)
                     --grace;
 
-                if ((grace == 0 && !module.mc.player.isFallFlying()) || module.mc.player.isInFluid()) {
+                if ((grace == 0 && !module.mc.player.isFallFlying()) || module.mc.player.isInLiquid()) {
                     if (module.debugMessages.get())
                         module.info("Started GOTOCLEAR because not flying.");
                     LevelFly levelFly = Modules.get().get(LevelFly.class);
@@ -1035,13 +1035,13 @@ public class HighwayFly extends Module {
                 }
 
                 boolean blockInFront = module.blockInFront(2);
-                boolean yLevel = module.mc.player.getBlockPos().getY() <= module.level;
-                boolean lowVelo = grace == 0 && module.mc.player.getVelocity().horizontalLength() <= 0.5;
+                boolean yLevel = module.mc.player.blockPosition().getY() <= module.level;
+                boolean lowVelo = grace == 0 && module.mc.player.getDeltaMovement().horizontalDistance() <= 0.5;
                 boolean badDir = module.mc.player.isFallFlying()
-                        && module.mc.player.getVelocity().horizontalLength() > 0.5
+                        && module.mc.player.getDeltaMovement().horizontalDistance() > 0.5
                         && Math.abs(HighwayFly.scalarProd(HighwayFly.as2d(normal),
-                                HighwayFly.extractXZ(module.mc.player.getVelocity())))
-                                / module.mc.player.getVelocity().horizontalLength() > 0.1;
+                                HighwayFly.extractXZ(module.mc.player.getDeltaMovement())))
+                                / module.mc.player.getDeltaMovement().horizontalDistance() > 0.1;
                 if (blockInFront || yLevel || lowVelo || badDir) {
 
                     if (module.debugMessages.get()) {
@@ -1066,7 +1066,7 @@ public class HighwayFly extends Module {
 
             private void stopFlying(HighwayFly module) {
                 if (module.kickStop.get())
-                    module.mc.player.setVelocity(0, module.mc.player.getVelocity().getY(), 0);
+                    module.mc.player.setDeltaMovement(0, module.mc.player.getDeltaMovement().y(), 0);
             }
         },
         GotoIntersect {
@@ -1076,14 +1076,14 @@ public class HighwayFly extends Module {
             @Override
             public void start(HighwayFly module) {
                 barAttempt = 0;
-                targetPos = module.intersection().up(1);
+                targetPos = module.intersection().above(1);
                 module.baritone.getCustomGoalProcess().setGoalAndPath(new GoalBlock(targetPos));
             }
 
             @Override
             public void tick(HighwayFly module) {
                 if (!module.baritone.getCustomGoalProcess().isActive()) {
-                    if (!module.mc.player.getBlockPos().equals(targetPos)) {
+                    if (!module.mc.player.blockPosition().equals(targetPos)) {
                         if (++barAttempt > module.maxRetries.get()) {
                             module.toggle();
                             module.error("Given up restarting Baritone at " + module.maxRetries.get() + "retries.");
@@ -1119,7 +1119,7 @@ public class HighwayFly extends Module {
         if (state == null)
             throw new RuntimeException("unreachable");
 
-        if (mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem() != Items.ELYTRA) {
+        if (mc.player.getItemBySlot(EquipmentSlot.CHEST).getItem() != Items.ELYTRA) {
             if (!isPaused) {
                 isPaused = true;
                 warning("No elytra equipped, waiting.");

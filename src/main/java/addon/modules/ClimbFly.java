@@ -117,13 +117,13 @@ public class ClimbFly extends Module {
                 Modules.get().get(module).toggle();
         }
 
-        cameraPitch = mc.player.getPitch();
-        cameraYaw = mc.player.getYaw();
+        cameraPitch = mc.player.getXRot();
+        cameraYaw = mc.player.getYRot();
     }
 
     @Override
     public void onDeactivate() {
-        mc.player.setPitch(cameraPitch);
+        mc.player.setXRot(cameraPitch);
     }
 
     @EventHandler
@@ -131,22 +131,22 @@ public class ClimbFly extends Module {
         if (Modules.get().isActive(Takeoff.class))
             return;
 
-        if (mc.player.getVelocity().length() > pitchUpLimit.get()) {
+        if (mc.player.getDeltaMovement().length() > pitchUpLimit.get()) {
             pitchUp = true;
-        } else if (mc.player.getVelocity().length() < pitchDownLimit.get()) {
+        } else if (mc.player.getDeltaMovement().length() < pitchDownLimit.get()) {
             pitchUp = false;
         }
 
-        if (pitchUp && mc.player.getPitch() > pitchUpAngle.get()) {
-            mc.player.setPitch((float) Math.max(pitchUpAngle.get(), mc.player.getPitch() - rotationSpeed.get()));
+        if (pitchUp && mc.player.getXRot() > pitchUpAngle.get()) {
+            mc.player.setXRot((float) Math.max(pitchUpAngle.get(), mc.player.getXRot() - rotationSpeed.get()));
         } else {
-            mc.player.setPitch(pitchUp ? pitchUpAngle.get().floatValue() : pitchDownAngle.get().floatValue());
+            mc.player.setXRot(pitchUp ? pitchUpAngle.get().floatValue() : pitchDownAngle.get().floatValue());
         }
 
         if (!mc.player.isFallFlying()) {
             error("Climb failed.");
             toggle();
-        } else if (mc.player.getVelocity().length() > pitchDownLimit.get() && mc.player.getY() > targetLevel.get().doubleValue()) {
+        } else if (mc.player.getDeltaMovement().length() > pitchDownLimit.get() && mc.player.getY() > targetLevel.get().doubleValue()) {
             if (debugMessages.get())
                 info("Target reached.");
             toggle();
