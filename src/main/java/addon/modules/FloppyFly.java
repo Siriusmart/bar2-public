@@ -72,7 +72,7 @@ public class FloppyFly extends Module {
         float radianYaw = (float) Math.toRadians(this.mc.player.getYaw());
         float boost = ((Double) this.settingBoost.get()).floatValue();
         float boost2 = ((Double) this.settingBoost2.get()).floatValue();
-        if (this.mc.player.isFallFlying()) {
+        if (this.mc.player.isGliding()) {
             if (Math.round(Utils.getPlayerSpeed().horizontalLength()) > ((Integer) this.maximumSpeed.get())
                     .intValue()) {
                 this.mc.player.addVelocity((MathHelper.sin(radianYaw) * -boost2), 0.0D,

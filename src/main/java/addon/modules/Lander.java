@@ -91,7 +91,7 @@ public class Lander extends Module {
 
     @Override
     public void onActivate() {
-        if (!mc.player.isFallFlying()) {
+        if (!mc.player.isGliding()) {
             toggle();
             error("Player not in air.");
             return;
@@ -138,7 +138,7 @@ public class Lander extends Module {
         mc.player.setPitch(cameraPitch);
 
         if (mc.player.isOnGround() || (exitOnFluid.get() && mc.player.isInFluid()))
-            mc.player.stopFallFlying();
+            mc.player.stopGliding();
     }
 
     @EventHandler
