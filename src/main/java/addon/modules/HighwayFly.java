@@ -37,6 +37,11 @@ public class HighwayFly extends Module {
     public final SettingGroup sgDigger = settings.createGroup("Digger");
     public final SettingGroup sgHighway = settings.createGroup("Highway");
 
+    public enum FlyMode {
+        Floppy,
+        ElytraFly
+    }
+
     public enum DigMode {
         Full(true, true),
         Minimal(true, false),
@@ -142,6 +147,11 @@ public class HighwayFly extends Module {
             .sliderMin(-10).sliderMax(0)
             .build());
 
+    public final Setting<FlyMode> flyMode = sgGeneral.add(new EnumSetting.Builder<FlyMode>()
+            .name("Fly mode")
+            .description("Which module to use for elytra boosting")
+            .defaultValue(FlyMode.ElytraFly)
+            .build());
     public final Setting<Integer> maxRetries = sgGeneral.add(new IntSetting.Builder()
             .name("Max retries")
             .description("Number of times to restart Baritone before giving up")
@@ -491,25 +501,50 @@ public class HighwayFly extends Module {
     private final List<Class<? extends Module>> incompat = List.of(
             Lander.class,
             LevelFly.class,
-            ClimbFly.class,
-            ElytraFly.class);
-
-    private final List<Class<? extends Module>> require = List.of(
-            FloppyFly.class);
+            ClimbFly.class);
 
     private final List<Class<? extends Module>> toDisable = List.of(
             Lander.class,
             LevelFly.class,
             ClimbFly.class,
             Scaffold.class,
-            HighwayDigger.class,
-            ElytraFly.class);
+            HighwayDigger.class);
 
-    private boolean floppyFlyRestore;
+    // whether the fly modules should follow this module's fly mode, kept true
+    // until the very end of onDeactivate so the handover to Lander uses it too
+    private static boolean driving = false;
+
+    // module providing the boost while flying
+    public static Class<? extends Module> boostModule() {
+        if (driving && Modules.get().get(HighwayFly.class).flyMode.get() == FlyMode.ElytraFly)
+            return ElytraFly.class;
+
+        return FloppyFly.class;
+    }
+
+    // module that would fight the one returned by boostModule
+    public static Class<? extends Module> conflictingBoostModule() {
+        return boostModule() == FloppyFly.class ? ElytraFly.class : FloppyFly.class;
+    }
+
+    // to be called by the fly modules once their own incompatibilities are handled
+    public static void applyBoostModules() {
+        Module conflicting = Modules.get().get(conflictingBoostModule());
+        if (conflicting.isActive())
+            conflicting.toggle();
+
+        Module boost = Modules.get().get(boostModule());
+        if (!boost.isActive())
+            boost.toggle();
+    }
+
+    private boolean floppyFlyRestore, elytraFlyRestore;
 
     @Override
     public void onActivate() {
+        driving = true;
         floppyFlyRestore = Modules.get().isActive(FloppyFly.class);
+        elytraFlyRestore = Modules.get().isActive(ElytraFly.class);
 
         if (!BaritoneUtils.IS_AVAILABLE) {
             error("Baritone not found.");
@@ -525,10 +560,7 @@ public class HighwayFly extends Module {
                 Modules.get().get(module).toggle();
         }
 
-        for (Class<? extends Module> module : require) {
-            if (!Modules.get().get(module).isActive())
-                Modules.get().get(module).toggle();
-        }
+        applyBoostModules();
 
         if (autoDetect.get()) {
             if (!mc.player.isOnGround()) {
@@ -619,6 +651,10 @@ public class HighwayFly extends Module {
 
     @Override
     public void onDeactivate() {
+        mc.options.jumpKey.setPressed(false);
+        mc.options.forwardKey.setPressed(false);
+        mc.options.sneakKey.setPressed(false);
+
         for (Class<? extends Module> module : toDisable) {
             if (module == Lander.class)
                 continue;
@@ -633,18 +669,23 @@ public class HighwayFly extends Module {
             Modules.get().get(FloppyFly.class).toggle();
         }
 
+        if (elytraFlyRestore != Modules.get().isActive(ElytraFly.class)) {
+            Modules.get().get(ElytraFly.class).toggle();
+        }
+
         if (!mc.player.isGliding()) {
             mc.player.setPitch(cameraPitch);
             mc.player.setYaw(cameraYaw);
-            return;
+        } else {
+            Lander lander = Modules.get().get(Lander.class);
+            lander.cameraPitch = cameraPitch;
+            lander.cameraYaw = cameraYaw;
+            lander.retainAngles = true;
+            if (!lander.isActive())
+                lander.toggle();
         }
 
-        Lander lander = Modules.get().get(Lander.class);
-        lander.cameraPitch = cameraPitch;
-        lander.cameraYaw = cameraYaw;
-        lander.retainAngles = true;
-        if (!lander.isActive())
-            lander.toggle();
+        driving = false;
     }
 
     public BlockPos gefEffOrigin() {
@@ -988,6 +1029,8 @@ public class HighwayFly extends Module {
             boolean started;
             Vector2i normal;
             int grace;
+            // elytra fly mode only, whether the climb to cruising height is done
+            boolean ascended;
 
             @Override
             public void start(HighwayFly module) {
@@ -1000,13 +1043,24 @@ public class HighwayFly extends Module {
 
                 module.mc.player.setYaw((float) HighwayFly.mcYaw(HighwayFly.octantTrueYaw(module.oct)));
                 normal = HighwayFly.extractXZ(HighwayFly.normalVector(module.oct));
-                LevelFly levelFly = Modules.get().get(LevelFly.class);
-                levelFly.yLevel.set(module.level + 2);
-                levelFly.takeOff.set(true);
-                if (levelFly.isActive())
-                    levelFly.toggle();
-                if (!levelFly.isActive())
-                    levelFly.toggle();
+                ascended = false;
+
+                if (module.flyMode.get() == FlyMode.ElytraFly) {
+                    // elytra fly flies level by itself, all it needs is a takeoff
+                    Takeoff takeoff = Modules.get().get(Takeoff.class);
+                    if (takeoff.isActive())
+                        takeoff.toggle();
+                    takeoff.toggle();
+                } else {
+                    LevelFly levelFly = Modules.get().get(LevelFly.class);
+                    levelFly.yLevel.set(module.level + 2);
+                    levelFly.takeOff.set(true);
+                    if (levelFly.isActive())
+                        levelFly.toggle();
+                    if (!levelFly.isActive())
+                        levelFly.toggle();
+                }
+
                 grace = 10;
             }
 
@@ -1015,7 +1069,7 @@ public class HighwayFly extends Module {
                 if (!started) {
                     if (!module.mc.player.isOnGround())
                         return;
-                    started = true;
+                    start(module);
                 }
 
                 if (grace != 0)
@@ -1034,10 +1088,21 @@ public class HighwayFly extends Module {
                     return;
                 }
 
+                if (module.flyMode.get() == FlyMode.ElytraFly)
+                    elytraFlyTick(module);
+
                 boolean blockInFront = module.blockInFront(2);
-                boolean yLevel = module.mc.player.getBlockPos().getY() <= module.level;
-                boolean lowVelo = grace == 0 && module.mc.player.getVelocity().horizontalLength() <= 0.5;
-                boolean badDir = module.mc.player.isGliding()
+                // sunk more than a block under the target height, only once the
+                // climb is done, as the launch pad itself sits a block under it
+                boolean yLevel = module.flyMode.get() == FlyMode.ElytraFly
+                        ? ascended && module.mc.player.getY() < module.level + 1
+                        : module.mc.player.getBlockPos().getY() <= module.level;
+                // while climbing there is no forward input yet, so the velocity
+                // based checks below would fire on a perfectly healthy takeoff
+                boolean climbing = module.flyMode.get() == FlyMode.ElytraFly && !ascended;
+                boolean lowVelo = grace == 0 && !climbing
+                        && module.mc.player.getVelocity().horizontalLength() <= 0.5;
+                boolean badDir = !climbing && module.mc.player.isGliding()
                         && module.mc.player.getVelocity().horizontalLength() > 0.5
                         && Math.abs(HighwayFly.scalarProd(HighwayFly.as2d(normal),
                                 HighwayFly.extractXZ(module.mc.player.getVelocity())))
@@ -1064,7 +1129,38 @@ public class HighwayFly extends Module {
                 }
             }
 
+            // elytra fly is driven by movement keys rather than pitch, so climb
+            // on jump until cruising height, then hold the height and go forward
+            private void elytraFlyTick(HighwayFly module) {
+                if (!module.mc.player.isGliding() || Modules.get().isActive(Takeoff.class))
+                    return;
+
+                double target = module.level + 2;
+                double y = module.mc.player.getY();
+
+                if (!ascended) {
+                    ascended = y >= target;
+                    module.mc.options.jumpKey.setPressed(!ascended);
+                    module.mc.options.forwardKey.setPressed(ascended);
+
+                    if (!ascended)
+                        return;
+                }
+
+                // elytra fly moves a fixed step per tick, so only correct the height
+                // when a whole step would not carry the player past the target
+                double step = 0.5 * Modules.get().get(ElytraFly.class).verticalSpeed.get();
+
+                module.mc.options.jumpKey.setPressed(target - y > step);
+                module.mc.options.sneakKey.setPressed(y - target > step);
+                module.mc.options.forwardKey.setPressed(true);
+                // elytra fly derives its velocity from yaw, so it has to stay put
+                module.mc.player.setYaw((float) HighwayFly.mcYaw(HighwayFly.octantTrueYaw(module.oct)));
+            }
+
             private void stopFlying(HighwayFly module) {
+                releaseKeys(module);
+
                 if (module.kickStop.get())
                     module.mc.player.setVelocity(0, module.mc.player.getVelocity().getY(), 0);
             }
@@ -1106,6 +1202,12 @@ public class HighwayFly extends Module {
         abstract void start(HighwayFly module);
 
         abstract void tick(HighwayFly module);
+
+        void releaseKeys(HighwayFly module) {
+            module.mc.options.jumpKey.setPressed(false);
+            module.mc.options.forwardKey.setPressed(false);
+            module.mc.options.sneakKey.setPressed(false);
+        }
     }
 
     private boolean isPaused = false;
