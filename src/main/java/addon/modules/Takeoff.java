@@ -10,7 +10,6 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import meteordevelopment.meteorclient.systems.modules.movement.elytrafly.ElytraFly;
 import meteordevelopment.orbit.EventHandler;
 import addon.Bar2Dee2;
 
@@ -36,11 +35,7 @@ public class Takeoff extends Module {
     }
 
     private final List<Class<? extends Module>> incompat = List.of(
-            Lander.class,
-            ElytraFly.class);
-
-    private final List<Class<? extends Module>> require = List.of(
-            FloppyFly.class);
+            Lander.class);
 
     int tick, deploy;
 
@@ -57,10 +52,7 @@ public class Takeoff extends Module {
                 Modules.get().get(module).toggle();
         }
 
-        for (Class<? extends Module> module : require) {
-            if (!Modules.get().get(module).isActive())
-                Modules.get().get(module).toggle();
-        }
+        HighwayFly.applyBoostModules();
 
         deploy = delay.get();
         tick = 0;
