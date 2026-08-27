@@ -1,12 +1,13 @@
 plugins {
-    id "fabric-loom" version "1.8-SNAPSHOT"
+    id "fabric-loom"
 }
 
 base {
-    archivesBaseName = project.archives_base_name
-    version = project.mod_version
-    group = project.maven_group
+    archivesName = project.archives_base_name
 }
+
+version = project.mod_version
+group = project.maven_group
 
 repositories {
     maven {
@@ -38,31 +39,31 @@ dependencies {
     runtimeOnly "dev.babbaj:nether-pathfinder:${project.nether_pathfinder_version}"
 }
 
-tasks {
-    processResources {
-        def propertyMap = [
-            "version"   : project.version,
-            "mc_version": project.minecraft_version,
-        ]
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
 
-        filesMatching("fabric.mod.json") {
-            expand(propertyMap)
-        }
-    }
+tasks.named("processResources") {
+    def propertyMap = [
+        "version"   : project.version,
+        "mc_version": project.minecraft_version,
+    ]
 
-    jar {
-        from("LICENSE") {
-            rename { "${it}_${project.base.archivesBaseName}" }
-        }
-    }
+    inputs.properties(propertyMap)
 
-    java {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+    filesMatching("fabric.mod.json") {
+        expand(propertyMap)
     }
+}
 
-    tasks.withType(JavaCompile).configureEach {
-        it.options.encoding = "UTF-8"
-        it.options.release = 21
+tasks.named("jar") {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}" }
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release = 21
 }
