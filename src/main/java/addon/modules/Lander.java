@@ -10,7 +10,6 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import meteordevelopment.meteorclient.systems.modules.movement.elytrafly.ElytraFly;
 import meteordevelopment.orbit.EventHandler;
 import addon.Bar2Dee2;
 
@@ -79,13 +78,9 @@ public class Lander extends Module {
     }
 
     private final List<Class<? extends Module>> incompat = List.of(
-            ElytraFly.class,
             ClimbFly.class,
             Takeoff.class,
             LevelFly.class);
-
-    private final List<Class<? extends Module>> require = List.of(
-            FloppyFly.class);
 
     public boolean retainAngles = false;
 
@@ -102,10 +97,7 @@ public class Lander extends Module {
                 Modules.get().get(module).toggle();
         }
 
-        for (Class<? extends Module> module : require) {
-            if (!Modules.get().get(module).isActive())
-                Modules.get().get(module).toggle();
-        }
+        HighwayFly.applyBoostModules();
 
         switch (mode.get()) {
             case Vertical:
