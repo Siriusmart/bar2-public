@@ -18,6 +18,10 @@ repositories {
         name = "Meteor Dev Snapshots"
         url = "https://maven.meteordev.org/snapshots"
     }
+    maven {
+        name = "babbaj"
+        url = "https://babbaj.github.io/maven/"
+    }
 }
 
 dependencies {
@@ -31,6 +35,9 @@ dependencies {
     modImplementation "meteordevelopment:meteor-client:${project.meteor_version}"
     // Baritone (https://github.com/MeteorDevelopment/baritone)
     modImplementation "meteordevelopment:baritone:${project.baritone_version}-SNAPSHOT"
+    // Baritone ships nether-pathfinder as a jar-in-jar, which Fabric Loader only
+    // unpacks in production, so runClient needs it on the classpath directly
+    runtimeOnly "dev.babbaj:nether-pathfinder:${project.nether_pathfinder_version}"
 }
 
 java {
